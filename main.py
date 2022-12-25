@@ -1,8 +1,9 @@
 import os
-import platform
 import random
-import shutil
 from pathlib import Path
+import json
+
+from filemanager_funcs import*
 
 # Текущая рабочая директория
 WORKDIR = Path.cwd()
@@ -11,64 +12,59 @@ WORKDIR = Path.cwd()
 def create_folder():
     folder_name = input('Введите название папки: ')
     folder_path = WORKDIR / folder_name
-    if folder_path.exists():
+
+    if create_dir(folder_path):
+        print('Папка создана')
+    else:
         print('Папка с таким именем уже существует!')
-        return
-    folder_path.mkdir()
-    print('Папка создана')
 
 
 def remove():
-    fname = input('Введите название папки/файла: ')
-    fpath = WORKDIR / fname
-    if not fpath.exists():
-        print('Папки/файла с таким именем не существует.')
-        return
-    if fpath.is_dir():
-        shutil.rmtree(fpath)
+    name = input('Введите название файла/папки: ')
+    path = WORKDIR / name
+
+    if del_file_or_dir(path):
+        print('Удаление выполнено')
     else:
-        os.remove(fpath)
-    print('Удаление выполнено')
+        print('Файла/папки с таким именем не существует.')
 
 
 def copy():
-    fname = input('Введите название папки/файла: ')
-    fpath = WORKDIR / fname
-    new_fname = input('Введите название новой папки/файла: ')
-    new_fpath = WORKDIR / new_fname
-    if not fpath.exists():
-        print('Папки/файла с таким именем не существует.')
-        return
-    if fpath.is_dir():
-        shutil.copytree(fpath, new_fpath)
+    name = input('Введите название файла/папки: ')
+    new_name = input('Введите название новой файла/папки: ')
+
+    path = WORKDIR / name
+    new_path = WORKDIR / new_name
+
+    if copy_file_or_dir(path, new_path):
+        print('Копирование завершено')
     else:
-        shutil.copy(fpath, new_fpath)
-    print('Копирование завершено')
+        print('Файла/папки с таким именем не существует.')
 
 
 def show_workdir():
-    for f in WORKDIR.glob('*'):
-        print(f'- {f.name}')
+    for item in get_files_and_dirs(WORKDIR):
+        print(f'- {item}')
 
 
 def show_workdir_folders():
-    for f in WORKDIR.glob('*'):
-        if f.is_dir():
-            print(f'- {f.name}')
+    for dir in get_dirs(WORKDIR):
+        print(f'- {dir}')
 
 
 def show_workdir_files():
-    for f in WORKDIR.glob('*'):
-        if f.is_file():
-            print(f'- {f.name}')
+    for file in get_files(WORKDIR):
+        print(f'- {file}')
 
 
 def show_os_info():
-    print(platform.platform())
+    os_info = get_os_info()
+    print(os_info)
 
 
-def creator_info():
-    print('Александр Масс')
+def show_creator_info():
+    creator_info = get_creator_info()
+    print(creator_info)
 
 
 def play_quiz():
@@ -245,6 +241,14 @@ def my_bank_account():
     bill_sum = 0
     history = []
 
+    fpath = WORKDIR / 'bank_account.json'
+
+    if os.path.exists(fpath):
+        with open(fpath, 'r') as f:
+            bank_account = json.load(f)
+            bill_sum = bank_account['bill_sum']
+            history = bank_account['history']
+
     while True:
         print('1. пополнение счета')
         print('2. покупка')
@@ -270,6 +274,11 @@ def my_bank_account():
             else:
                 print(history)
         elif choice == '4':
+            with open(fpath, 'w') as f:
+                json.dump({
+                    'bill_sum': bill_sum,
+                    'history': history
+                }, f)
             break
         else:
             print('Неверный пункт меню')
@@ -277,17 +286,18 @@ def my_bank_account():
 
 def change_workdir():
     global WORKDIR
-    new_wd = input('Введите путь к новой рабочей директории:')
-    # Есть путь - полный
-    if new_wd.startswith('/'):
-        new_wd_path = Path(new_wd)
+    new_work_dir = input('Введите путь к новой рабочей директории: ')
+
+    new_work_dir_path = get_new_workdir_path(WORKDIR, new_work_dir)
+    if new_work_dir_path is not None:
+        WORKDIR = new_work_dir_path
+        print('Новая рабочая директория: ', new_work_dir_path)
     else:
-        new_wd_path = WORKDIR / new_wd
-    if not new_wd_path.exists():
         print('Ошибка. Директории не существует.')
-        return
-    WORKDIR = new_wd_path
-    print('Новая рабочая директория:', WORKDIR)
+
+
+def save_workdir():
+    save_workdir_contents(WORKDIR)
 
 
 def main():
@@ -305,7 +315,8 @@ def main():
             '8 - создатель программы\n',
             '9 - играть в викторину\n',
             '10 - мой банковский счет\n',
-            '11 - *смена рабочей директории\n',
+            '11 - смена рабочей директории\n',
+            '12 - сохранить содержимое рабочей директории в файл\n'
             '0 - выход\n',
         )
         cmd = input('>: ')
@@ -327,13 +338,15 @@ def main():
         elif cmd == '7':
             show_os_info()
         elif cmd == '8':
-            creator_info()
+            show_creator_info()
         elif cmd == '9':
             play_quiz()
         elif cmd == '10':
             my_bank_account()
         elif cmd == '11':
             change_workdir()
+        elif cmd == '12':
+            save_workdir()
 
 
 if __name__ == '__main__':
