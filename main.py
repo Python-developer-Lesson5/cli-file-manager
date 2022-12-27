@@ -10,61 +10,59 @@ WORKDIR = Path.cwd()
 
 
 def create_folder():
-    folder_name = input('Введите название папки: ')
-    folder_path = WORKDIR / folder_name
+    try:
+        folder_name = input('Введите название папки: ')
+        folder_path = WORKDIR / folder_name
 
-    if create_dir(folder_path):
-        print('Папка создана')
-    else:
-        print('Папка с таким именем уже существует!')
+        success = create_dir(folder_path)
+        print('Папка создана' if success else 'Папка с таким именем уже существует!')
+    except:
+        print('Неизвестная ошибка!')
 
 
 def remove():
-    name = input('Введите название файла/папки: ')
-    path = WORKDIR / name
+    try:
+        name = input('Введите название файла/папки: ')
+        path = WORKDIR / name
 
-    if del_file_or_dir(path):
-        print('Удаление выполнено')
-    else:
-        print('Файла/папки с таким именем не существует.')
+        success = del_file_or_dir(path)
+        print('Удаление выполнено' if success else 'Файла/папки с таким именем не существует.')
+    except:
+        print('Неизвестная ошибка!')
 
 
 def copy():
-    name = input('Введите название файла/папки: ')
-    new_name = input('Введите название новой файла/папки: ')
+    try:
+        name = input('Введите название файла/папки: ')
+        new_name = input('Введите название новой файла/папки: ')
 
-    path = WORKDIR / name
-    new_path = WORKDIR / new_name
+        path = WORKDIR / name
+        new_path = WORKDIR / new_name
 
-    if copy_file_or_dir(path, new_path):
-        print('Копирование завершено')
-    else:
-        print('Файла/папки с таким именем не существует.')
+        success = copy_file_or_dir(path, new_path)
+        print('Копирование завершено' if success else 'Файла/папки с таким именем не существует.')
+    except:
+        print('Неизвестная ошибка!')
 
 
 def show_workdir():
-    for item in get_files_and_dirs(WORKDIR):
-        print(f'- {item}')
+    print(*(f'- {item}' for item in get_files_and_dirs(WORKDIR)), sep = '\n')
 
 
 def show_workdir_folders():
-    for dir in get_dirs(WORKDIR):
-        print(f'- {dir}')
+    print(*(f'- {dir}' for dir in get_dirs(WORKDIR)), sep = '\n')
 
 
 def show_workdir_files():
-    for file in get_files(WORKDIR):
-        print(f'- {file}')
+    print(*(f'- {file}' for file in get_files(WORKDIR)), sep = '\n')
 
 
 def show_os_info():
-    os_info = get_os_info()
-    print(os_info)
+    print(get_os_info())
 
 
 def show_creator_info():
-    creator_info = get_creator_info()
-    print(creator_info)
+    print(get_creator_info())
 
 
 def play_quiz():
@@ -243,11 +241,14 @@ def my_bank_account():
 
     fpath = WORKDIR / 'bank_account.json'
 
-    if os.path.exists(fpath):
-        with open(fpath, 'r') as f:
-            bank_account = json.load(f)
-            bill_sum = bank_account['bill_sum']
-            history = bank_account['history']
+    try:
+        if os.path.exists(fpath):
+            with open(fpath, 'r') as f:
+                bank_account = json.load(f)
+                bill_sum = bank_account['bill_sum']
+                history = bank_account['history']
+    except:
+        print('Не удалось восстановить данные о счете из файла')
 
     while True:
         print('1. пополнение счета')
@@ -258,46 +259,63 @@ def my_bank_account():
 
         choice = input('Выберите пункт меню: ')
         if choice == '1':
-            cost = int(input('Введите сумму пополнения в копейках: '))
-            bill_sum += cost
+            try:
+                cost = int(input('Введите сумму пополнения в копейках: '))
+            except:
+                print('Вы ввели не число')
+            else:
+                bill_sum += cost
         elif choice == '2':
-            cost = int(input('Введите сумму покупки в копейках: '))
-            if cost > bill_sum:
-                print('Недостаточно средств')
+            try:
+                cost = int(input('Введите сумму покупки в копейках: '))
+            except:
+                print('Вы ввели не число')
             else:
-                bill_sum -= cost
-                name = input('Введите название покупки: ')
-                history.append((name, cost))
+                if cost > bill_sum:
+                    print('Недостаточно средств')
+                else:
+                    bill_sum -= cost
+                    name = input('Введите название покупки: ')
+                    history.append((name, cost))
         elif choice == '3':
-            if history == []:
-                print('У вас нет покупок.')
-            else:
-                print(history)
+            print('У вас нет покупок.' if history == [] else history)
         elif choice == '4':
-            with open(fpath, 'w') as f:
-                json.dump({
-                    'bill_sum': bill_sum,
-                    'history': history
-                }, f)
-            break
+            try:
+                with open(fpath, 'w') as f:
+                    json.dump({
+                        'bill_sum': bill_sum,
+                        'history': history
+                    }, f)
+            except:
+                print('Не удалось сохранить данные о счете в файл')
+            finally:
+                break
         else:
             print('Неверный пункт меню')
 
 
 def change_workdir():
     global WORKDIR
-    new_work_dir = input('Введите путь к новой рабочей директории: ')
 
-    new_work_dir_path = get_new_workdir_path(WORKDIR, new_work_dir)
-    if new_work_dir_path is not None:
-        WORKDIR = new_work_dir_path
-        print('Новая рабочая директория: ', new_work_dir_path)
-    else:
-        print('Ошибка. Директории не существует.')
+    try:
+        new_work_dir = input('Введите путь к новой рабочей директории: ')
+        new_work_dir_path = get_new_workdir_path(WORKDIR, new_work_dir)
+
+        if new_work_dir_path is not None:
+            WORKDIR = new_work_dir_path
+            print('Новая рабочая директория: ', new_work_dir_path)
+        else:
+            print('Ошибка. Директории не существует.')
+    except:
+        print('Неизвестная ошибка!')
 
 
 def save_workdir():
-    save_workdir_contents(WORKDIR)
+    try:
+        success = save_workdir_contents(WORKDIR)
+        print('Содержимое рабочей директории сохранено в файл' if success else 'Не удалось сохранить!')
+    except:
+        print('Неизвестная ошибка!')
 
 
 def main():
@@ -316,7 +334,7 @@ def main():
             '9 - играть в викторину\n',
             '10 - мой банковский счет\n',
             '11 - смена рабочей директории\n',
-            '12 - сохранить содержимое рабочей директории в файл\n'
+            '12 - сохранить содержимое рабочей директории в файл\n',
             '0 - выход\n',
         )
         cmd = input('>: ')
